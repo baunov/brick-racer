@@ -209,7 +209,10 @@
 </div>
 <div id="container" class="game-wrapper">
 
-    <div class="score"><div>Score:</div><div id="scoreValue"></div></div>
+    <div class="score">
+        <div>Transparency:</div><div id="transparency"></div>
+        <div>Score:</div><div id="scoreValue"></div>
+    </div>
     <div id="player" class="player-box">
     </div>
 </div>
@@ -239,6 +242,7 @@
     const score = document.getElementById('scoreValue');
     const bg = document.getElementById('gameBg');
     const bgImage = document.getElementById('gameBgImage');
+    const transparency = document.getElementById('transparency');
 
     let lastFrameTime = 0;
     let gameSpeedFPSMultiplier = 1;
@@ -263,6 +267,9 @@
     let horizontalChance = 0.2;
     let bgOffset = 0;
 
+    let transparencyTime = 3000;
+    let isTransparent = false;
+
     const bgBricks = [];
     const bgBricksProps = new Map();
 
@@ -283,6 +290,7 @@
         minWallWidth = START_MIN_WALL_WIDTH;
         maxWallWidth = START_MAX_WALL_WIDTH;
         gameStartTime = null;
+        transparencyTime = 3000;
     }
 
     startGameBtn.addEventListener('click', handleStartGame);
@@ -468,6 +476,16 @@
         updatePlayerTarget(event.clientX, event.clientY);
     });
 
+    document.addEventListener('mousedown', () => {
+        if (transparencyTime > 0) {
+            isTransparent = true;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isTransparent = false;
+    })
+
     // Handling touch movement
     document.addEventListener('touchmove', (event) => {
         // Prevent the window from scrolling
@@ -497,8 +515,22 @@
             r2.bottom < r1.top);
     }
 
+    function adjustSquareSize(square, factor) {
+        const centerX = square.x + square.width / 2;
+        const centerY = square.y + square.height / 2;
+        const newHeightHalf = square.height * factor / 2;
+        const newWidthHalf = square.width * factor / 2;
+        return {
+            top: centerY - newHeightHalf,
+            bottom: centerY + newHeightHalf,
+            left: centerX - newWidthHalf,
+            right: centerX + newWidthHalf,
+        };
+    }
+
     function getPlayerIntersectingBricks() {
         const playerRect = player.getBoundingClientRect();
+        const adjustedPlayerRect = adjustSquareSize(playerRect, 0.6);
         return bricksAr.filter((brick) => {
             const props = bricksMap.get(brick);
             const brickRect = {
@@ -507,7 +539,7 @@
                 left: props.x,
                 right: props.x + props.width
             };
-            return rectsIntersect(playerRect, brickRect);
+            return rectsIntersect(adjustedPlayerRect, brickRect);
         });
     }
 
@@ -529,8 +561,9 @@
     }
 
     function update(time) {
+        let deltaTime = 0;
         if (lastFrameTime !== 0) {
-            const deltaTime = time - lastFrameTime;
+            deltaTime = time - lastFrameTime;
             const targetMultiplier = deltaTime / targetFrameDuration
             gameSpeedFPSMultiplier = Number.isNaN(targetMultiplier) ? 1 : targetMultiplier;
         } else {
@@ -541,7 +574,6 @@
         container.style.opacity = isPlaying && !isDead ? '1' : '0';
         startMenu.style.display = !isPlaying && !isDead ? 'flex' : 'none';
         gameOver.style.display = isDead ? 'flex' : 'none';
-
 
         if (isPlaying && !gameStartTime) {
             gameStartTime = time;
@@ -563,6 +595,18 @@
         translateX(${playerProps.x}px)
         translateY(${playerProps.y}px)
         `;
+
+        player.style.opacity = isTransparent ? '0.5' : '1';
+        transparency.style.color = transparencyTime > 0 ? 'white' : 'red';
+
+        if (isTransparent) {
+            transparencyTime = Math.max(0, transparencyTime - deltaTime);
+        }
+
+        if (transparencyTime <= 0) {
+            isTransparent = false;
+        }
+
         moveBricks();
 
         bricksAr.forEach((brick) => {
@@ -574,8 +618,10 @@
             brick.style.width = `${props.width}px`;
         });
 
-        if (getPlayerIntersectingBricks().length > 0 && timeElapsed > 3000) {
-            handleGameOver();
+        if (!isTransparent) {
+            if (getPlayerIntersectingBricks().length > 0 && timeElapsed > 3000) {
+                handleGameOver();
+            }
         }
 
         const lastBrick = bricksAr[bricksAr.length - 1];
@@ -600,6 +646,9 @@
         }
 
         score.innerText = `${scoreValue}`;
+        const transparencySec = transparencyTime / 1000;
+        const transparencyText = Math.round(transparencySec * 100) / 100;
+        transparency.innerText = `${transparencyText}`
 
         lastFrameTime = time;
         requestAnimationFrame(update);
