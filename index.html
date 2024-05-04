@@ -21,10 +21,12 @@
             height: 30%;
             width: 40px;
             position: absolute;
+            will-change: transform;
         }
 
         .car {
             position: absolute;
+            will-change: transform;
         }
 
         .game-over-screen {
@@ -106,6 +108,7 @@
             position: absolute;
             background: linear-gradient(0deg, gray, white);
             opacity: 0.95;
+            will-change: transform;
         }
 
         .bg-cloud-brick {
@@ -113,6 +116,7 @@
             background: linear-gradient(0deg, deepskyblue, white);
             border-radius: 80px;
             opacity: 0.7;
+            will-change: transform;
         }
 
         .player-box {
@@ -253,17 +257,18 @@
     }
 
     function updateDifficulty() {
+        const difficulty = Math.log(timeElapsed);
         if (!Number.isNaN(Math.log(timeElapsed))) {
-            scrollSpeed = START_SCROLL_SPEED + Math.log(timeElapsed) * 0.005;
-            minBrickSpeed = START_MIN_BRICK_SPEED + Math.log(timeElapsed) * 0.04;
-            maxBrickSpeed = START_MAX_BRICK_SPEED + Math.log(timeElapsed) * 0.04;
-            minBrickDist = START_MIN_BRICK_DIST - Math.log(timeElapsed) * 0.2;
-            maxBrickDist = START_MAX_BRICK_DIST - Math.log(timeElapsed) * 0.4;
-            minWallHeight = START_MIN_WALL_HEIGHT + Math.log(timeElapsed) * 0.9;
-            maxWallHeight = START_MAX_WALL_HEIGHT + Math.log(timeElapsed) * 0.9;
-            minWallWidth = START_MIN_WALL_WIDTH + Math.log(timeElapsed) * 0.3;
-            maxWallWidth = START_MAX_WALL_WIDTH + Math.log(timeElapsed) * 0.3;
-            horizontalChance = 0.2 + Math.log(timeElapsed) * 0.0002;
+            scrollSpeed = START_SCROLL_SPEED + difficulty * 0.005;
+            minBrickSpeed = START_MIN_BRICK_SPEED + difficulty * 0.04;
+            maxBrickSpeed = START_MAX_BRICK_SPEED + difficulty * 0.04;
+            minBrickDist = START_MIN_BRICK_DIST - difficulty * 0.2;
+            maxBrickDist = START_MAX_BRICK_DIST - difficulty * 0.4;
+            minWallHeight = START_MIN_WALL_HEIGHT + difficulty * 0.9;
+            maxWallHeight = START_MAX_WALL_HEIGHT + difficulty * 0.9;
+            minWallWidth = START_MIN_WALL_WIDTH + difficulty * 0.3;
+            maxWallWidth = START_MAX_WALL_WIDTH + difficulty * 0.3;
+            horizontalChance = 0.2 + difficulty * 0.0002;
         }
         // maxBrickSpeed = START_SCROLL_SPEED + Math.log(timeElapsed) * 0.01;
     }
@@ -351,16 +356,16 @@
     }
 
     const playerProps = {
-        x: window.innerWidth / 2 - player.clientWidth / 2,
-        y: window.innerHeight / 2 - player.clientHeight / 2
+        x: window.innerWidth * 0.5 - player.clientWidth * 0.5,
+        y: window.innerHeight * 0.5 - player.clientHeight * 0.5
     };
     const playerTargetProps = {
         ...playerProps
     };
 
     document.addEventListener('mousemove', (event) => {
-        playerTargetProps.x = Math.min(Math.max(0, event.clientX - player.clientWidth / 2), window.innerWidth - player.clientWidth);
-        playerTargetProps.y = Math.min(Math.max(0, event.clientY - player.clientHeight / 2), window.innerHeight - player.clientHeight);
+        playerTargetProps.x = Math.min(Math.max(0, event.clientX - player.clientWidth * 0.5), window.innerWidth - player.clientWidth);
+        playerTargetProps.y = Math.min(Math.max(0, event.clientY - player.clientHeight  * 0.5), window.innerHeight - player.clientHeight);
     });
 
     function moveBricks() {
@@ -385,7 +390,13 @@
     function getPlayerIntersectingBricks() {
         const playerRect = player.getBoundingClientRect();
         return bricksAr.filter((brick) => {
-            const brickRect = brick.getBoundingClientRect();
+            const props = bricksMap.get(brick);
+            const brickRect = {
+                top: props.y,
+                bottom: props.y + props.height,
+                left: props.x,
+                right: props.x + props.width
+            };
             return rectsIntersect(playerRect, brickRect);
         });
     }
@@ -409,8 +420,8 @@
 
     function update(time) {
         scoreValue = Math.round(timeElapsed * 0.01);
-        playerProps.x += (playerTargetProps.x - playerProps.x) / 6;
-        playerProps.y += (playerTargetProps.y - playerProps.y) / 6;
+        playerProps.x += (playerTargetProps.x - playerProps.x) * 0.15;
+        playerProps.y += (playerTargetProps.y - playerProps.y) * 0.15;
 
         player.style.transform = `
             translateX(${playerProps.x}px)
