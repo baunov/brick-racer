@@ -179,6 +179,10 @@
     const score = document.getElementById('scoreValue');
     const bg = document.getElementById('gameBg');
 
+    let lastFrameTime = 0;
+    let gameSpeedMultiplier = 1;
+    const targetFrameDuration = 1000 / 120; // Targeting 60 FPS
+
     let isPlaying = true;
     let timeElapsed = 0;
     let scoreValue = 0;
@@ -249,7 +253,7 @@
 
         bgBricks.forEach((brick) => {
             const props = bgBricksProps.get(brick);
-            props.x -= scrollSpeed * props.speed;
+            props.x -= scrollSpeed * props.speed * gameSpeedMultiplier;
             brick.style.width = `${props.width}px`;
             brick.style.height = `${props.height}px`;
             brick.style.transform = `translateX(${props.x}px) translateY(${props.y}px)`;
@@ -419,20 +423,32 @@
     }
 
     function update(time) {
+        if (lastFrameTime !== 0) {
+            const deltaTime = time - lastFrameTime;
+            const targetMultiplier = deltaTime / targetFrameDuration
+            gameSpeedMultiplier = Number.isNaN(targetMultiplier) ? 1 : targetMultiplier;
+        } else {
+            gameSpeedMultiplier = 1; // Initialize to 1 to avoid division by zero or incorrect multipliers
+        }
+
+        console.log('gameSpeedMultiplier', gameSpeedMultiplier);
+
         scoreValue = Math.round(timeElapsed * 0.01);
-        playerProps.x += (playerTargetProps.x - playerProps.x) * 0.15;
-        playerProps.y += (playerTargetProps.y - playerProps.y) * 0.15;
+        playerProps.x += (playerTargetProps.x - playerProps.x) * 0.15 * gameSpeedMultiplier;
+        playerProps.y += (playerTargetProps.y - playerProps.y) * 0.15 * gameSpeedMultiplier;
+
+        console.log('playerProps.x', playerProps.x)
 
         player.style.transform = `
-            translateX(${playerProps.x}px)
-            translateY(${playerProps.y}px)
+        translateX(${playerProps.x}px)
+        translateY(${playerProps.y}px)
         `;
         moveBricks();
 
         bricksAr.forEach((brick) => {
             const props = bricksMap.get(brick);
-            props.y += props.speed * props.direction;
-            props.x -= (scrollSpeed + props.horizontalSpeed);
+            props.y += props.speed * props.direction * gameSpeedMultiplier;
+            props.x -= (scrollSpeed + props.horizontalSpeed) * gameSpeedMultiplier;
             brick.style.transform = `translateX(${Math.round(props.x)}px) translateY(${props.y}px)`;
             brick.style.height = `${props.height}px`;
             brick.style.width = `${props.width}px`;
@@ -467,6 +483,7 @@
 
         score.innerText = `${scoreValue}`;
 
+        lastFrameTime = time;
         if (isPlaying) {
             requestAnimationFrame(update);
         }
