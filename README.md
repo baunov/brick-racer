@@ -1,4 +1,4 @@
-A project made while I was teaching my brother how to code.
+A project made while I was teaching my young brother how to code.
 Everything (and I mean EVERYTHING) is in a single html file - including js, css, images, music.
 Obviously, you shouldn't build games this way. But it might be good for learning.
 
